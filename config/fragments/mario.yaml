@@ -69,6 +69,7 @@ features:
   reject_ball_outside_field: true
   # Widen the playable rectangle by this many mm before rejecting (0 = strict).
   ball_inside_field_margin_mm: 0
+  enable_event_processing: false  # note: disabling this also disables commentary for now (im in a hurry, doesnt have to be this way but okay)
   commentate: true
   # OpenCV window "MARIO Debug": event, last commentary line, ball possession (nearest robot + team). Same thread as other GUI when async_output_pipeline is on.
   # Rolling median field (mm) + majority BGR per track id — used for overlays, CSV, and commentator.

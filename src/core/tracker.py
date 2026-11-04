@@ -436,23 +436,25 @@ class Tracking:
                     )
                 build_rows_ms = (time.perf_counter() - t_rows) * 1000.0
 
-                frame_df = pd.DataFrame(_rows, columns=COLUMN_NAMES)
-                events = self.eventproc.process_frame(frame_df)
-
                 commentary_event_label = None
                 commentary_text = None
                 ball_motion_debug = None
-                t_comm = time.perf_counter()
-                commentary_event_label, commentary_text, ball_motion_debug = self._display.commentary_labels(
-                    events=events,
-                    commentate=bool(self.config.features.commentate),
-                    eventproc=self.eventproc,
-                    commentator=self.commentator,
-                    match_tts=self.match_tts,
-                    llm=self.models.llm,
-                    show_window=show_comm_win,
-                )
-                commentate_ms = (time.perf_counter() - t_comm) * 1000.0
+
+                if self.config.features.enable_event_processing:
+                    frame_df = pd.DataFrame(_rows, columns=COLUMN_NAMES)
+                    events = self.eventproc.process_frame(frame_df)
+
+                    t_comm = time.perf_counter()
+                    commentary_event_label, commentary_text, ball_motion_debug = self._display.commentary_labels(
+                        events=events,
+                        commentate=bool(self.config.features.commentate),
+                        eventproc=self.eventproc,
+                        commentator=self.commentator,
+                        match_tts=self.match_tts,
+                        llm=self.models.llm,
+                        show_window=show_comm_win,
+                    )
+                    commentate_ms = (time.perf_counter() - t_comm) * 1000.0
 
                 output_job = OutputJob(
                     frame_id=self.frame_id,
