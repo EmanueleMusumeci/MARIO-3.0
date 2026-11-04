@@ -88,7 +88,7 @@ def main():
     succeeded, failed = multimario_base.go_mario(args)
 
     for game_name in succeeded:
-        robot_type = arg_saved_or_ask(args.robot_type, ROOT_DIR / "data" / "games" / game_name / "robot_type.txt", f"{game_name} field type? ")
+        robot_type = arg_saved_or_ask(args.robot_type, ROOT_DIR / "data" / "games" / game_name / "robot_type.txt", f"{game_name} robot type? ")
         sects = sections_to_sincrolog(game_name)
         if args.resincrolog:
             print(f"{game_name}: doing all sincrolog due to resincrolog request")

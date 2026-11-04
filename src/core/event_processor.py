@@ -59,6 +59,7 @@ class EventProcessor:
                 self._ball_positions.append((frame, float(bx), float(by)))
 
     def _process_events(self, frame_df: pd.DataFrame) -> EventFlags:
+        # TODO se arriva una frame_df vuota questa riga MUORE!!
         second = int(frame_df.iloc[0]["frame"]) / self.fps
         events = EventFlags()
         events.trigger_frame = int(frame_df.iloc[0]["frame"])

@@ -27,7 +27,7 @@ def add_multimario_arguments(parser):
     parser.add_argument(
         "--reparse-gc",
         action="store_true",
-        help="Force parsing the gc.yaml log even if it's alreaddy been processed previously (as evidenced by the existence of gameinfo.yaml)"
+        help="Force parsing the gc.yaml log even if it's already been processed previously (as evidenced by the existence of gameinfo.yaml)"
     )
     parser.add_argument(
         "--recalibrate",
