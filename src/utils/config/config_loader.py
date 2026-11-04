@@ -19,8 +19,10 @@ from .field import FieldConfig
 FIELD_TYPE_TO_FILE = {
     "SPL": "fieldSPL.yaml",
     "HSL-m-go26": "fieldHSL_M_2026.yaml",
+    "HSL-m-rc26": "fieldHSL_M_2026.yaml",
     "HSL-s-go26": "fieldHSL_S_go2026.yaml",
     "RCAP": "fieldRCAP.yaml",
+    "HSL-l-io26": "fieldHSL_L_io2026.yaml", 
 }
 
 VISION_TYPE_TO_FILE = {
