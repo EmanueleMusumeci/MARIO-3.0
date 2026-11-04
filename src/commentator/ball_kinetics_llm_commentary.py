@@ -570,10 +570,9 @@ def maybe_ball_kinetics_llm_comment(
     dec_team = str(decision.get("acting_team", "unknown"))
     dec_cls  = str(decision.get("classification", "unclear"))
     if dec_team == "unknown" or dec_cls == "unclear":
-        print(
+        logger.info(
             f"[Commentary BALL-KINETICS-LLM] skip unclassified | frame={trigger} | "
             f"team={dec_team} | cls={dec_cls}",
-            flush=True,
         )
         commentator.mark_ball_kinetics_llm_sent(dedup_key)
         return False
@@ -583,10 +582,9 @@ def maybe_ball_kinetics_llm_comment(
     last_goal_f = getattr(commentator, "_last_goal_frame", None)  # questa getattr è effettivamente giustificata per come è fatto il commentator ad oggi (ma, insomma, si farebbe meglio a metterlo direttamente a None)
     post_goal_window = comm_cfg.post_goal_wait_window_frames
     if last_goal_f is not None and (trigger - int(last_goal_f)) <= post_goal_window:
-        print(
+        logger.info(
             f"[Commentary BALL-KINETICS-LLM] skip post-goal wait | frame={trigger} | "
             f"since_goal={trigger - int(last_goal_f)}fr (window={post_goal_window})",
-            flush=True,
         )
         commentator.mark_ball_kinetics_llm_sent(dedup_key)
         return False
@@ -599,10 +597,9 @@ def maybe_ball_kinetics_llm_comment(
         classification=dec_cls,
         window_seconds=repeat_suppress_sec,
     ):
-        print(
+        logger.info(
             f"[Commentary BALL-KINETICS-LLM] suppress repeat | frame={trigger} | "
             f"team={dec_team} | cls={dec_cls} | window={repeat_suppress_sec:.1f}s",
-            flush=True,
         )
         commentator.mark_ball_kinetics_llm_sent(dedup_key)
         return False
@@ -630,9 +627,8 @@ def maybe_ball_kinetics_llm_comment(
             preview = raw_s.strip().replace("\n", " ")
             if len(preview) > 160:
                 preview = preview[:160] + "…"
-            print(
+            logger.info(
                 f"[Commentary BALL-KINETICS-LLM] raw ({len(raw_s)} chars): {preview}",
-                flush=True,
             )
             text = extract_json_comment(raw_s)
             if text:
@@ -654,10 +650,9 @@ def maybe_ball_kinetics_llm_comment(
             if on_async_complete is not None:
                 on_async_complete()
 
-    print(
+    logger.info(
         f"[Commentary BALL-KINETICS-LLM] call | backend={type(llm).__name__} | "
         f"frame={trigger} | prompt_chars={len(full_prompt)}",
-        flush=True,
     )
     if on_committed is not None:
         on_committed()

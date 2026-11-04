@@ -176,8 +176,7 @@ def process_section(section_name, models, args, config, logger):
 
     # Initialize and run tracking
     logger.info("Initializing tracker...")
-    print(logger.level)
-    tracker = Tracking(config, section_name, models, the_side_hint, args.calibration_timestamp, logging.getLevelName(logger.level))
+    tracker = Tracking(config, section_name, models, the_side_hint, args.calibration_timestamp)
 
     logger.info("Starting video processing...")
     try:
@@ -214,18 +213,18 @@ def main():
         print("- Use --recalibrate to force the calibration studio")
         exit(0)
 
+    # Load configuration
+    config = utils.MarioConfig.from_yaml(args)
+    paths = config.get_paths()
+
     # Setup logging
-    log_level = "DEBUG" if args.verbose else "INFO"
-    logger = utils.setup_logger(__name__, level=log_level)
+    logger = utils.setup_logger(__name__, config)
+    # also for all loggers called simply via logging.getLogger
+    logging.basicConfig(level=config.logging.level, format=config.logging.format)
 
     logger.info("=" * 60)
     logger.info("MARIO v2.0 - Starting video analysis")
     logger.info("=" * 60)
-
-    # Load configuration
-    logger.info(f"Loading configuration from: {args.config or 'config.yaml'}")
-    config = utils.MarioConfig.from_yaml(args)
-    paths = config.get_paths()
 
     if config.is_streaming:
         if not args.sections:

@@ -52,14 +52,14 @@ class Tracking:
     Main tracking class for processing video frames with detection and tracking.
     """
 
-    def __init__(self, config: MarioConfig, section_name: str, models: any, side_hint: any, calibration_timestamp_secs: float, log_level="INFO"):
+    def __init__(self, config: MarioConfig, section_name: str, models: any, side_hint: any, calibration_timestamp_secs: float):
         """
         Initialize tracking with configuration.
 
         Args:
             config: MARIO configuration object.
         """
-        self.logger = setup_logger(__name__, level=log_level)
+        self.logger = setup_logger(__name__, config)
         self.config = config
         self.paths = config.get_paths(mario_section_name=section_name)
         self.models = models
@@ -78,7 +78,7 @@ class Tracking:
 
         self.color_cnn = NullColorCNN()
         try:
-            self.color_cnn = VISION_TYPE_TO_CNN[config.vision_type](config, log_level)
+            self.color_cnn = VISION_TYPE_TO_CNN[config.vision_type](config)
         except FileNotFoundError:
             self.logger.warning("Color CNN not found, defaulting to none.")
         except Exception as e:

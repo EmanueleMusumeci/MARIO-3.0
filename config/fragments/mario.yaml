@@ -85,7 +85,8 @@ processing:
 drawing:
   warped_field_segment_resolution: 32
 
+# this is only for the main mario, not pre- or post-processors
 logging:
-  level: "INFO"
+  level: "WARNING"
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   file: null

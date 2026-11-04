@@ -8,10 +8,13 @@ so the model can stay coherent and occasionally summarize.
 from __future__ import annotations
 
 import json
+import logging
+
 from typing import Any, Callable, List
 
 from src.commentator.commentator import Commentator, extract_json_comment, team_labels
 
+logger = logging.getLogger(__name__)
 
 def build_periodic_system_prompt(
     features: Any,
@@ -244,10 +247,9 @@ def maybe_periodic_scene_llm(
         try:
             raw_s = raw or ""
             preview = raw_s.strip().replace("\n", " ")[:160]
-            print(
+            logger.info(
                 f"[Commentary LLM] periodic raw ({len(raw_s)} chars): {preview}"
                 + ("…" if len(raw_s) > 160 else ""),
-                flush=True,
             )
             mode = ""
             try:
@@ -259,7 +261,7 @@ def maybe_periodic_scene_llm(
             except (json.JSONDecodeError, ValueError):
                 pass
             if mode:
-                print(f"[Commentary LLM] periodic mode={mode}", flush=True)
+                logger.info(f"[Commentary LLM] periodic mode={mode}")
             text = extract_json_comment(raw_s)
             # Guardrail: one sentence; cap length so periodic does not run over urgent lines.
             if text:
@@ -277,10 +279,9 @@ def maybe_periodic_scene_llm(
         finally:
             on_async_complete()
 
-    print(
+    logger.info(
         f"[Commentary LLM] periodic scene | backend={type(llm).__name__} | frame={trigger} | "
         f"tail_frames={tail_frames} stride={stride} | prompt_chars={len(full_prompt)}",
-        flush=True,
     )
     llm.llm_call_async(full_prompt, on_done=_done)
     return True

@@ -16,14 +16,14 @@ import numpy.typing as npt
 from pathlib import Path
 
 from ..vision.bounding_box import BoundingBox
-from ..utils.logger import get_logger
 from ..streaming import cap_from_youtube, parse_deltas
 from ..commentator.commentary_labels import L_GOAL
 from ..commentator.events_commentary import (
     spoken_line_for_ocr_goal,
 )
 
-logger = get_logger(__name__)
+import logging
+logger = logging.getLogger(__name__)
 
 
 def _box_area(box: BoundingBox) -> float:
@@ -320,11 +320,10 @@ class FrameIteratorBase:
                 crop_left = frame[ly1:ly2, lx1:lx2].copy()
                 crop_right = frame[ry1:ry2, rx1:rx2].copy()
                 if self._show_debug_ocr:
-                    print(
+                    logger.info(
                         f"[OCR] schedule frame={self._current_frame} "
                         f"crops left=y{ly1}:{ly2},x{lx1}:{lx2} "
                         f"right=y{ry1}:{ry2},x{rx1}:{rx2}",
-                        flush=True,
                     )
                 if crop_left.size == 0 or crop_right.size == 0:
                     logger.warning(
@@ -370,7 +369,7 @@ class FrameIteratorBase:
                     # Snapshot previous score, then update with the freshly OCR'd one.
                     with self._ocr_lock:
                         raw_l, raw_r = state["raw_l"], state["raw_r"]
-                        # print(f"[OCR raw] left='{raw_l}' right='{raw_r}'", flush=True)
+                        # logger.info(f"[OCR raw] left='{raw_l}' right='{raw_r}'")
                         sl_prev = self.last_reading.score_left
                         sr_prev = self.last_reading.score_right
                         n = _parse_score(raw_l)
@@ -381,7 +380,7 @@ class FrameIteratorBase:
                             self.last_reading.score_right = n
                         sl_new = self.last_reading.score_left
                         sr_new = self.last_reading.score_right
-                        # print(f"[OCR] left {sl_new} - right {sr_new}", flush=True)
+                        # logger.info(f"[OCR] left {sl_new} - right {sr_new}")
 
                         # Only call the LLM when the score actually changed (real goal).
                         # The per-frame Commentator handles all the other proactive lines.
@@ -395,7 +394,7 @@ class FrameIteratorBase:
                             and self.mario_config.commentating.deterministic_goal_speech
                         ):
                             line = spoken_line_for_ocr_goal(left_scored, self.mario_config, self.team_map)
-                            print(f"[Commentary] {line}", flush=True)
+                            logger.info(f"[Commentary] {line}")
                             self.match_tts.enqueue_speak(
                                 line, urgent=True, source_frame=None, label=L_GOAL
                             )
@@ -414,7 +413,7 @@ class FrameIteratorBase:
                         )
 
                     def _on_score_commentary(c: str) -> None:
-                        print(f"[LLM] {c}", flush=True)
+                        logger.info(f"[LLM] {c}")
                         if self.match_tts is not None:
                             self.match_tts.enqueue_speak(
                                 c, urgent=True, source_frame=None, label=L_GOAL

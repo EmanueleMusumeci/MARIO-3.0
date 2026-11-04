@@ -44,7 +44,6 @@ class _ColorProcessor:
             #     max_color = "green"
 
             if prev_color is None or prev_color != max_color:
-                # if input_track_id == 5: print("ZAN ZAN ZAN")
                 neotracks.append(Neotrack(max_color))
             neotracks[-1].append(this_index)
             prev_color = max_color

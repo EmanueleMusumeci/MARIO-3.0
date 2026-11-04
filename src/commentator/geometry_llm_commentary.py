@@ -129,9 +129,8 @@ def maybe_geometry_llm_comment(
         try:
             raw_s = raw or ""
             preview = raw_s.strip().replace("\n", " ")[:160]
-            print(
+            logger.info(
                 f"[Commentary LLM] raw response ({len(raw_s)} chars): {preview}",
-                flush=True,
             )
             text = extract_json_comment(raw_s)
             if text:
@@ -140,10 +139,9 @@ def maybe_geometry_llm_comment(
             if on_async_complete is not None:
                 on_async_complete()
 
-    print(
+    logger.info(
         f"[Commentary LLM] call geometry refinement | backend={type(llm).__name__} | "
         f"frame={trigger} | ±{context_frames} frames | prompt_chars={len(full_prompt)}",
-        flush=True,
     )
     commentator.mark_geometry_llm_sent(dedup_key)
     llm.llm_call_async(full_prompt, on_done=_done)

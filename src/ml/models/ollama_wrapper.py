@@ -6,6 +6,9 @@ import ollama
 from concurrent.futures import ThreadPoolExecutor, Future
 from typing import Optional, Callable
 
+import logging
+logger = logging.getLogger(__name__)
+
 PADDING_COLOR = (128, 128, 128)
 VLM_INPUT_SIZE = (448, 448)
 
@@ -55,7 +58,7 @@ class OllamaWrapper:
             def _cb(f):
                 exc = f.exception()
                 if exc:
-                    print(f"[OllamaWrapper] async call failed: {exc}", flush=True)
+                    logger.warning(f"[OllamaWrapper] async call failed: {exc}")
                     on_done("")
                 else:
                     on_done(f.result())

@@ -113,7 +113,6 @@ if __name__ == '__main__':
     _, resolutions = list_video_streams(youtube_url)
     resolutions = np.append(resolutions, 'best')
 
-    print(resolutions)
     for vid_res in resolutions:
         cap = cap_from_youtube(youtube_url, vid_res)
         test_video(cap, vid_res)

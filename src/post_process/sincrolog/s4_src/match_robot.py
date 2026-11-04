@@ -5,6 +5,8 @@ import logging
 
 Candidate = namedtuple('Candidate', ['cost', 'robot_key', 'mario_id', 'distance'])
 
+blabbing_logger = logging.getLogger(__name__ + "BLAH")
+
 def get_gc_robot_color(team, player, team_map):
     """
     Determine the color of a GC robot based on team and player using the config.
@@ -30,7 +32,7 @@ def get_gc_robot_color(team, player, team_map):
         else:
             return team_map.away_color
     else:
-        print(f"[COLOR] Unknown team {team}")
+        blabbing_logger.info(f"[COLOR] Unknown team {team}")
         return 'unknown'
 
 def is_robot_flipped_origin(gc_x, gc_y, mario_x, mario_y, flip_threshold):
@@ -105,10 +107,10 @@ def update_gc_flipped_state(current_assignments, gc_state_all, mario_robots, las
                 del last_associated_mario_pos[robot_key]
             
             if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                print(f"\n[DEBUG FLIP] t={current_time/1000:.2f}s Robot {robot_key}:")
-                print(f"  Robot is PENALIZED - RESETTING flip state")
+                blabbing_logger.info(f"\n[DEBUG FLIP] t={current_time/1000:.2f}s Robot {robot_key}:")
+                blabbing_logger.info(f"  Robot is PENALIZED - RESETTING flip state")
                 if was_flipped:
-                    print(f"CHANGED FLIP STATE: {was_flipped} → False (due to penalty)")
+                    blabbing_logger.info(f"CHANGED FLIP STATE: {was_flipped} → False (due to penalty)")
             continue  # skip the rest of the logic for penalized robots
         
         gc_pos_raw = gc_robot_data.iloc[0][['x', 'y']].values
@@ -123,13 +125,13 @@ def update_gc_flipped_state(current_assignments, gc_state_all, mario_robots, las
 
         # DEBUG 
         if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-            print(f"\n[DEBUG FLIP] t={current_time/1000:.2f}s Robot {robot_key}:")
-            print(f"  GC pos: ({gc_pos[0]:.1f}, {gc_pos[1]:.1f})")
-            print(f"  Flipped pos would be: ({-gc_pos[0]:.1f}, {-gc_pos[1]:.1f})")
-            print(f"  Mario ID assigned: {mario_id}")
-            print(f"  Was flipped: {was_flipped}")
-            print(f"  Current assignments: {current_assignments}")
-            print(f"  Available mario robots: {len(mario_robots_no_asg)}")
+            blabbing_logger.info(f"\n[DEBUG FLIP] t={current_time/1000:.2f}s Robot {robot_key}:")
+            blabbing_logger.info(f"  GC pos: ({gc_pos[0]:.1f}, {gc_pos[1]:.1f})")
+            blabbing_logger.info(f"  Flipped pos would be: ({-gc_pos[0]:.1f}, {-gc_pos[1]:.1f})")
+            blabbing_logger.info(f"  Mario ID assigned: {mario_id}")
+            blabbing_logger.info(f"  Was flipped: {was_flipped}")
+            blabbing_logger.info(f"  Current assignments: {current_assignments}")
+            blabbing_logger.info(f"  Available mario robots: {len(mario_robots_no_asg)}")
 
         if mario_id is not None:
             # Case 1: robot has an assigned MARIO
@@ -141,36 +143,36 @@ def update_gc_flipped_state(current_assignments, gc_state_all, mario_robots, las
                 dist_flipped = np.linalg.norm(flipped_pos - mario_pos)
 
                 if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                    print(f"  CASE 1: Robot has an assigned MARIO")
-                    print(f"  Mario pos: ({mario_pos[0]:.1f}, {mario_pos[1]:.1f})")
-                    print(f"  Dist normal: {dist:.1f}")
-                    print(f"  Dist flipped: {dist_flipped:.1f}")
-                    print(f"  Flip threshold: {s_config.flip_dist_threshold}")
-                    print(f"  Condition dist > threshold: {dist} > {s_config.flip_dist_threshold} = {dist > s_config.flip_dist_threshold}")
-                    print(f"  Condition flipped < threshold: {dist_flipped} < {s_config.flip_dist_threshold} = {dist_flipped < s_config.flip_dist_threshold}")
+                    blabbing_logger.info(f"  CASE 1: Robot has an assigned MARIO")
+                    blabbing_logger.info(f"  Mario pos: ({mario_pos[0]:.1f}, {mario_pos[1]:.1f})")
+                    blabbing_logger.info(f"  Dist normal: {dist:.1f}")
+                    blabbing_logger.info(f"  Dist flipped: {dist_flipped:.1f}")
+                    blabbing_logger.info(f"  Flip threshold: {s_config.flip_dist_threshold}")
+                    blabbing_logger.info(f"  Condition dist > threshold: {dist} > {s_config.flip_dist_threshold} = {dist > s_config.flip_dist_threshold}")
+                    blabbing_logger.info(f"  Condition flipped < threshold: {dist_flipped} < {s_config.flip_dist_threshold} = {dist_flipped < s_config.flip_dist_threshold}")
 
                 if dist > s_config.flip_dist_threshold and dist_flipped < s_config.flip_dist_threshold:
                     is_flipped = True
                     if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                        print(f"  SETTING FLIPPED (dist too high, flipped close)")
+                        blabbing_logger.info(f"  SETTING FLIPPED (dist too high, flipped close)")
                 elif dist < s_config.flip_dist_threshold:
                     is_flipped = False
                     if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                        print(f"  UNSETTING FLIPPED (normal dist OK)")
+                        blabbing_logger.info(f"  UNSETTING FLIPPED (normal dist OK)")
 
         else:
             # Case 2: robot does NOT have an assigned MARIO
             last_mario_pos = last_associated_mario_pos.get(robot_key)
             if last_mario_pos is None:
                 if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                    print(f"  CASE 2: Robot does NOT have an assigned MARIO")
-                    print(f"  NO last_mario_pos (just came out of penalty?)")
-                    print(f"  Keeping current flip state: {is_flipped}")
+                    blabbing_logger.info(f"  CASE 2: Robot does NOT have an assigned MARIO")
+                    blabbing_logger.info(f"  NO last_mario_pos (just came out of penalty?)")
+                    blabbing_logger.info(f"  Keeping current flip state: {is_flipped}")
                 continue
             if last_mario_pos is not None:
                 if np.isscalar(last_mario_pos) or len(last_mario_pos) != 2:
                     if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                        print(f"  Invalid last_mario_pos format")
+                        blabbing_logger.info(f"  Invalid last_mario_pos format")
                     continue
                 
                 last_mario_pos = np.array(last_mario_pos, dtype=np.float64)
@@ -182,13 +184,13 @@ def update_gc_flipped_state(current_assignments, gc_state_all, mario_robots, las
                     mario_positions = mario_positions_array[distances_to_last < search_radius]
                     
                     if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                        print(f"  CASE 2: Robot does NOT have an assigned MARIO")
-                        print(f"  Last MARIO pos: ({last_mario_pos[0]:.1f}, {last_mario_pos[1]:.1f})")
-                        print(f"  Search radius: {search_radius:.1f}")
-                        print(f"  Distances to last pos: {distances_to_last}")
-                        print(f"  Candidates in range: {len(mario_positions)}")
+                        blabbing_logger.info(f"  CASE 2: Robot does NOT have an assigned MARIO")
+                        blabbing_logger.info(f"  Last MARIO pos: ({last_mario_pos[0]:.1f}, {last_mario_pos[1]:.1f})")
+                        blabbing_logger.info(f"  Search radius: {search_radius:.1f}")
+                        blabbing_logger.info(f"  Distances to last pos: {distances_to_last}")
+                        blabbing_logger.info(f"  Candidates in range: {len(mario_positions)}")
                         if len(mario_positions) > 0:
-                            print(f"  Candidate positions: {mario_positions}")
+                            blabbing_logger.info(f"  Candidate positions: {mario_positions}")
                     
                     if len(mario_positions) > 0:
                         flipped_pos = np.array([-gc_pos[0], -gc_pos[1]], dtype=np.float64)
@@ -199,29 +201,29 @@ def update_gc_flipped_state(current_assignments, gc_state_all, mario_robots, las
                         min_dist_normal = dists_normal.min()
                         
                         if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                            print(f"  All dists normal: {dists_normal}")
-                            print(f"  All dists flipped: {dists_flipped}")
-                            print(f"  Min dist normal: {min_dist_normal:.1f}")
-                            print(f"  Min dist flipped: {min_dist_flipped:.1f}")
-                            print(f"  Condition normal > threshold: {min_dist_normal} > {s_config.flip_dist_threshold} = {min_dist_normal > s_config.flip_dist_threshold}")
-                            print(f"  Condition flipped < threshold*1.5: {min_dist_flipped} < {s_config.flip_dist_threshold * 1.5} = {min_dist_flipped < s_config.flip_dist_threshold * 1.5}")
+                            blabbing_logger.info(f"  All dists normal: {dists_normal}")
+                            blabbing_logger.info(f"  All dists flipped: {dists_flipped}")
+                            blabbing_logger.info(f"  Min dist normal: {min_dist_normal:.1f}")
+                            blabbing_logger.info(f"  Min dist flipped: {min_dist_flipped:.1f}")
+                            blabbing_logger.info(f"  Condition normal > threshold: {min_dist_normal} > {s_config.flip_dist_threshold} = {min_dist_normal > s_config.flip_dist_threshold}")
+                            blabbing_logger.info(f"  Condition flipped < threshold*1.5: {min_dist_flipped} < {s_config.flip_dist_threshold * 1.5} = {min_dist_flipped < s_config.flip_dist_threshold * 1.5}")
                         
                         if min_dist_normal > s_config.flip_dist_threshold and min_dist_flipped < s_config.flip_dist_threshold * 1.5:
                             is_flipped = True
                             if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                                print(f" SETTING FLIPPED (unassigned, normal too far)")
+                                blabbing_logger.info(f" SETTING FLIPPED (unassigned, normal too far)")
                         elif min_dist_normal < s_config.flip_dist_threshold:
                             is_flipped = False
                             if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                                print(f" UNSETTING FLIPPED (unassigned, normal close)")
+                                blabbing_logger.info(f" UNSETTING FLIPPED (unassigned, normal close)")
                         else:
                             if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-                                print(f" NO CHANGE (unassigned conditions not met)")
+                                blabbing_logger.info(f" NO CHANGE (unassigned conditions not met)")
 
         if robot_key == debug_robot and debug_interval[0] <= current_time <= debug_interval[1]:
-            print(f"  Final flipped state: {is_flipped}")
+            blabbing_logger.info(f"  Final flipped state: {is_flipped}")
             if was_flipped != is_flipped:
-                print(f" CHANGED FLIP STATE: {was_flipped} → {is_flipped}")
+                blabbing_logger.info(f" CHANGED FLIP STATE: {was_flipped} → {is_flipped}")
 
         gc_flipped_state[robot_key] = is_flipped
         
@@ -451,7 +453,7 @@ def setup_logger(paths):
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
-    print(logger.handlers)
+    blabbing_logger.info(logger.handlers)
 
 def _frame_to_mmss(frame):
     secs = frame//30
@@ -514,7 +516,6 @@ def update_assignments_manually(
             last_associated_mario_pos[robot_key] = last_associated_mario_pos.get(robot_key)
 
     logger = logging.getLogger(__name__)
-    # print(logger.handlers)
     logger.info(f"""
         FRAME {current_frame}\t(time {_frame_to_mmss(current_frame)})
         robots_to_assign {robots_to_assign}

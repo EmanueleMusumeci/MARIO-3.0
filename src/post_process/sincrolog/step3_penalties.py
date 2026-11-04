@@ -1,7 +1,9 @@
-from scipy.spatial.distance import cdist
 import pandas as pd
 import numpy as np
 import json
+
+import logging
+logger = logging.getLogger(__name__)
 
 def find_gc_start_time(gc_df, gc_validity_start_time):
     # returns a column with the time in the csv for which it is greater than or equal to that of the initial whistle and the condition if
@@ -18,23 +20,23 @@ def crash_condition(gc_df, max_absence_time=20000):
     corrected_gc_df = gc_df.copy()
     gc_df_filtered = gc_df[gc_df.gametime >= 0].copy()
 
-    print(f"\n[CRASHED ROBOT] Robot absent for {max_absence_time/1000:.1f} seconds...")
+    logger.info(f"\n[CRASHED ROBOT] Robot absent for {max_absence_time/1000:.1f} seconds...")
 
     all_robots = gc_df_filtered[['team', 'player']].drop_duplicates()
-    
+
     for _, robot_info in all_robots.iterrows():
         team, player = robot_info.team, robot_info.player
         robot_key = (team, player)
-        
+
         # robot history
         robot_history = gc_df_filtered[
-            (gc_df_filtered.team == team) & 
+            (gc_df_filtered.team == team) &
             (gc_df_filtered.player == player)
         ].sort_values('gametime').copy()
-        
+
         if len(robot_history) < 2:
             continue
-        
+
         # Find long absence time
         for i in range(1, len(robot_history)):
             prev_time = robot_history.iloc[i-1].gametime
@@ -46,15 +48,15 @@ def crash_condition(gc_df, max_absence_time=20000):
                 crash_start_time = prev_time
                 crash_end_time = curr_time
 
-                print(f"Robot {robot_key}: CRASHED from {crash_start_time/1000:.1f}s to {crash_end_time/1000:.1f}s (absence of {absence_duration/1000:.1f}s)")
+                logger.info(f"Robot {robot_key}: CRASHED from {crash_start_time/1000:.1f}s to {crash_end_time/1000:.1f}s (absence of {absence_duration/1000:.1f}s)")
 
                 # Mark all records from the moment of the crash until the return as penalized
                 robot_mask = (corrected_gc_df.team == team) & (corrected_gc_df.player == player)
                 crash_mask = robot_mask & (corrected_gc_df.gametime >= crash_start_time) & (corrected_gc_df.gametime < crash_end_time)
-                
+
                 records_penalized = crash_mask.sum()
-                print(f"{records_penalized} records marked as penalized during the absence")
-                
+                logger.info(f"{records_penalized} records marked as penalized during the absence")
+
                 corrected_gc_df.loc[crash_mask, 'penalized'] = True
 
         # Check if the robot disappears permanently at the end
@@ -62,63 +64,63 @@ def crash_condition(gc_df, max_absence_time=20000):
             last_seen_time = robot_history.iloc[-1].gametime
             game_end_time = gc_df_filtered.gametime.max()
             final_absence = game_end_time - last_seen_time
-            
+
             if final_absence > max_absence_time:
-                print(f"Robot {robot_key}: CRASHED DEFINITIVELY from {last_seen_time/1000:.1f}s to the end")
+                logger.info(f"Robot {robot_key}: CRASHED DEFINITIVELY from {last_seen_time/1000:.1f}s to the end")
 
                 # Mark all records as penalized from the final crash moment onward.
                 robot_mask = (corrected_gc_df.team == team) & (corrected_gc_df.player == player)
                 crash_mask = robot_mask & (corrected_gc_df.gametime >= last_seen_time)
-                
+
                 records_penalized = crash_mask.sum()
-                print(f" {records_penalized} records marked as penalized from the final crash")
-                
+                logger.info(f" {records_penalized} records marked as penalized from the final crash")
+
                 corrected_gc_df.loc[crash_mask, 'penalized'] = True
-    
+
     return corrected_gc_df
 
 def exclude_robots_from_gc(gc_df, exclusions):
     """
     Esclude robot specifici dal dataset GC in determinati intervalli di tempo.
-    
+
     Args:
         gc_df: DataFrame con i dati GC
         exclusions: Lista di dict con formato:
                    [{'team_number': int, 'player_number': int, 'start_time': ms, 'end_time': ms, 'reason': str}]
-    
+
     Returns:
         DataFrame: gc_df filtrato senza i robot esclusi negli intervalli specificati
     """
     if not exclusions:
         return gc_df
-    
+
     gc_df = gc_df.copy()
-    
-    print(f"\n[ROBOT EXCLUSIONS] Applying {len(exclusions)} exclusions...")
-    
+
+    logger.info(f"\n[ROBOT EXCLUSIONS] Applying {len(exclusions)} exclusions...")
+
     for exclusion in exclusions:
         team = exclusion['team_number']
         player = exclusion['player_number']
         start_time = exclusion['start_time']
         end_time = exclusion['end_time']
         reason = exclusion.get('reason', 'No reason provided')
-        
+
         # Maschera per identificare le righe da escludere
         exclusion_mask = (
-            (gc_df.team == team) & 
-            (gc_df.player == player) & 
-            (gc_df.gametime >= start_time) & 
+            (gc_df.team == team) &
+            (gc_df.player == player) &
+            (gc_df.gametime >= start_time) &
             (gc_df.gametime <= end_time)
         )
-        
+
         excluded_count = exclusion_mask.sum()
-        print(f"  → Excluding robot (team={team}, player={player}) from {start_time/1000:.2f}s to {end_time/1000:.2f}s")
-        print(f"    Reason: {reason}")
-        print(f"    Records excluded: {excluded_count}")
-        
+        logger.info(f"  → Excluding robot (team={team}, player={player}) from {start_time/1000:.2f}s to {end_time/1000:.2f}s")
+        logger.info(f"    Reason: {reason}")
+        logger.info(f"    Records excluded: {excluded_count}")
+
         # Rimuovi le righe che corrispondono ai criteri di esclusione
         gc_df = gc_df[~exclusion_mask]
-    
+
     return gc_df
 
 def filter_gc_after_penalty(gc_df, min_movement=500):
@@ -126,7 +128,7 @@ def filter_gc_after_penalty(gc_df, min_movement=500):
     Removes GC records of robots that exit penalty but have not yet relocalized.
     A robot is considered "non-relocalized" if its position does not change significantly
     compared to the last position during the penalty.
-    
+
     Args:
         gc_df: gc DataFrame
         min_movement: Minimum distance in mm to consider a robot "relocalized"
@@ -136,34 +138,34 @@ def filter_gc_after_penalty(gc_df, min_movement=500):
     """
     gc_df = gc_df.copy()
     gc_df_filtered = gc_df[gc_df.gametime >= 0].copy()
-    
-    print(f"\n[NON-RELOCALIZED ROBOTS] Detecting robots not relocalized after penalty...")
-    
+
+    logger.info(f"\n[NON-RELOCALIZED ROBOTS] Detecting robots not relocalized after penalty...")
+
     all_robots = gc_df_filtered[['team', 'player']].drop_duplicates()
-    
+
     records_to_remove = []
-    
+
     for _, robot_info in all_robots.iterrows():
         team, player = robot_info.team, robot_info.player
         robot_key = (team, player)
-        
+
         robot_history = gc_df_filtered[
-            (gc_df_filtered.team == team) & 
+            (gc_df_filtered.team == team) &
             (gc_df_filtered.player == player)
         ].sort_values('gametime').copy()
-        
+
         if len(robot_history) < 2:
             continue
-        
+
         penalty_position = None
         penalty_end_time = None
-        
+
         for i in range(len(robot_history)):
             current_row = robot_history.iloc[i]
             is_penalized = current_row.penalized
             current_pos = np.array([current_row.x, current_row.y])
             current_time = current_row.gametime
-            
+
             if is_penalized:
                 # Save the last position during penalty
                 penalty_position = current_pos
@@ -171,28 +173,28 @@ def filter_gc_after_penalty(gc_df, min_movement=500):
             elif penalty_position is not None and penalty_end_time is None:
                 # The robot has just exited the penalty
                 penalty_end_time = current_time
-                print(f"Robot {robot_key}: exited penalty at {penalty_end_time/1000:.2f}s")
-                print(f"Last penalty position: ({penalty_position[0]:.1f}, {penalty_position[1]:.1f})")
+                logger.info(f"Robot {robot_key}: exited penalty at {penalty_end_time/1000:.2f}s")
+                logger.info(f"Last penalty position: ({penalty_position[0]:.1f}, {penalty_position[1]:.1f})")
 
             # If the robot has exited the penalty but has not yet moved
             if penalty_end_time is not None and not is_penalized:
                 movement = np.linalg.norm(current_pos - penalty_position)
-                
+
                 if movement < min_movement:
                     # The robot has not yet moved enough - remove this record
                     records_to_remove.append(current_row.name)
                 else:
                     # The robot has moved enough - it is re-localized
-                    print(f"Robot {robot_key} relocalized at {current_time/1000:.2f}s (moved {movement:.1f}mm)")
+                    logger.info(f"Robot {robot_key} relocalized at {current_time/1000:.2f}s (moved {movement:.1f}mm)")
                     penalty_position = None
                     penalty_end_time = None
-    
+
     if records_to_remove:
-        print(f"Removing {len(records_to_remove)} non-relocalized records")
+        logger.info(f"Removing {len(records_to_remove)} non-relocalized records")
         gc_df = gc_df.drop(records_to_remove)
     else:
-        print(f"No non-relocalized records found")
-    
+        logger.info(f"No non-relocalized records found")
+
     return gc_df
 
 def convert_row(row):
@@ -209,7 +211,7 @@ def convert_row(row):
     return row
 
 def local_to_global(robot_x, robot_y, robot_theta, local_x, local_y):
-    
+
     global_x = robot_x + local_x * np.cos(robot_theta) - local_y * np.sin(robot_theta)
     global_y = robot_y + local_x * np.sin(robot_theta) + local_y * np.cos(robot_theta)
     return global_x, global_y
@@ -235,7 +237,7 @@ def main(section_name, config):
     mario_df["videotime"] = (mario_df.frame / config.processing.fps) * 1000
     # gc_validity_start_time is read from the configuration json file
     gc_start_time = find_gc_start_time(gc_df, params["manual"]["gc_validity_start_time"])
-    print(f"[DEBUG] gc_start_time: {gc_start_time}")
+    logger.info(f"[DEBUG] gc_start_time: {gc_start_time}")
 
     if gc_start_time is None:
         final_corrected_gc_df = pd.DataFrame([])
@@ -243,12 +245,12 @@ def main(section_name, config):
         # save the new gc_start_time in a new field
         gc_df["gametime"] = gc_df.gctime - gc_start_time
         mario_df["gametime"] = mario_df.videotime - params["manual"]["mario_start_time"]
-        print("[DEBUG] Primi valori GC:")
-        print(gc_df[["gctime", "gametime", "playing"]].head(10))
+        logger.info("[DEBUG] Primi valori GC:")
+        logger.info(gc_df[["gctime", "gametime", "playing"]].head(10))
         # COORDINATE TRANSFORMATION
         if gc_flip_team is not None:
             gc_df.loc[gc_df['team'] == gc_flip_team, ['x', 'y']] *= -1
-        
+
         params['calculated_gc_start_time'] = float(gc_start_time)
         with open(paths.section_params, 'w', encoding='utf-8') as f:
             json.dump(params, f, indent=4, ensure_ascii=False)
@@ -257,10 +259,10 @@ def main(section_name, config):
         robot_exclusions = params["manual"].get("robot_exclusions", [])
         if robot_exclusions:
             gc_df = exclude_robots_from_gc(gc_df, robot_exclusions)
-            
+
         # CONSIDER ROBOT CRASHES
         final_corrected_gc_df = crash_condition(gc_df, max_absence_time=20000)
         final_corrected_gc_df = filter_gc_after_penalty(final_corrected_gc_df, min_movement=500)
         final_corrected_gc_df.apply(convert_row, axis = 1)
-    print(f"[CONFIG] Saving output to: {paths.gc_post_step3_csv}")
+    logger.info(f"[CONFIG] Saving output to: {paths.gc_post_step3_csv}")
     final_corrected_gc_df.to_csv(paths.gc_post_step3_csv, index=False)

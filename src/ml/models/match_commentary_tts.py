@@ -44,6 +44,8 @@ from .tts import generate_speech, resolve_edge_voice, start_audio_playback
 if TYPE_CHECKING:
     from ...commentator.event_flags import EventFlags
 
+import logging
+logger = logging.getLogger(__name__)
 
 
 def spoken_line_for_ocr_goal(left_score_increased: bool, config: Any, team_map: Any) -> str:
@@ -409,11 +411,10 @@ class MatchCommentaryTTS:
         self._use_online = bool(tts_cfg.get("use_edge_tts", True))
         self._min_interval_sec = float(tts_cfg.get("min_interval_sec", 4.0))
         if self._audio_enabled:
-            print(
+            logger.info(
                 f"[MatchCommentaryTTS] TTS: commentary_lang={_comm_lang} | "
                 f"edge_voice={self._voice} | gtts_lang={self._gtts_lang} | "
                 f"use_edge_tts={self._use_online}",
-                flush=True,
             )
         self._last_play_monotonic = -1e9
         self._goal_dedup_lock = threading.Lock()
@@ -531,7 +532,7 @@ class MatchCommentaryTTS:
         if not self._export_joined or self._audio_mix_path is None:
             return False
         if not self._has_ffmpeg():
-            print("[MatchCommentaryTTS] ffmpeg not found; skip commentary audio mix", flush=True)
+            logger.warning("[MatchCommentaryTTS] ffmpeg not found; skip commentary audio mix")
             return False
         with self._timeline_lock:
             entries = list(self._timeline_entries)
@@ -587,7 +588,7 @@ class MatchCommentaryTTS:
             subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return True
         except Exception as ex:
-            print(f"[MatchCommentaryTTS] audio mix failed: {ex}", flush=True)
+            logger.warning(f"[MatchCommentaryTTS] audio mix failed: {ex}")
             return False
 
     def _recover_video(self, src: Path) -> Path:
@@ -613,13 +614,12 @@ class MatchCommentaryTTS:
                 timeout=120,
             )
             if result.returncode == 0 and recovered.exists() and recovered.stat().st_size > 1024:
-                print(
+                logger.info(
                     f"[MatchCommentaryTTS] recovered video: {recovered.name}",
-                    flush=True,
                 )
                 return recovered
         except Exception as ex:
-            print(f"[MatchCommentaryTTS] video recovery attempt failed: {ex}", flush=True)
+            logger.warning(f"[MatchCommentaryTTS] video recovery attempt failed: {ex}")
         if recovered.exists():
             recovered.unlink(missing_ok=True)
         return src
@@ -633,12 +633,12 @@ class MatchCommentaryTTS:
         ):
             return
         if not self._clean_video_path.exists():
-            print("[MatchCommentaryTTS] clean video not found; skip final mux", flush=True)
+            logger.warning("[MatchCommentaryTTS] clean video not found; skip final mux")
             return
         if not self._audio_mix_path.exists():
             return
         if not self._has_ffmpeg():
-            print("[MatchCommentaryTTS] ffmpeg not found; skip final mux", flush=True)
+            logger.warning("[MatchCommentaryTTS] ffmpeg not found; skip final mux")
             return
 
         # Repair the clean video container in case the VideoWriter was not
@@ -659,12 +659,11 @@ class MatchCommentaryTTS:
         ]
         try:
             subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            print(
+            logger.info(
                 f"[MatchCommentaryTTS] exported joined clean video: {self._joined_video_path}",
-                flush=True,
             )
         except Exception as ex:
-            print(f"[MatchCommentaryTTS] final mux failed: {ex}", flush=True)
+            logger.warning(f"[MatchCommentaryTTS] final mux failed: {ex}")
         finally:
             if recovered and video_src.exists():
                 video_src.unlink(missing_ok=True)
@@ -870,7 +869,7 @@ class MatchCommentaryTTS:
                     if not t:
                         return
                     self._record_assistant_line(t)
-                    print(f"[Commentary GOAL-LLM] {t}", flush=True)
+                    logger.info(f"[Commentary GOAL-LLM] {t}")
                     self.enqueue_speak(t, urgent=True, source_frame=trigger_frame, label=L_GOAL)
 
                 used_llm_goal = maybe_goal_state_llm(
@@ -886,7 +885,7 @@ class MatchCommentaryTTS:
                 if used_llm_goal:
                     self._llm_in_flight += 1
             if not used_llm_goal:
-                print(f"[Commentary EVENT] {goal}", flush=True)
+                logger.info(f"[Commentary EVENT] {goal}")
                 urgent = bool(events.goal_for_left_team or events.goal_for_right_team)
                 self.enqueue_speak(goal, urgent=urgent, source_frame=trigger_frame, label=L_GOAL)
             maybe_general_comment(
@@ -917,7 +916,7 @@ class MatchCommentaryTTS:
                 if not text:
                     return
                 self._record_assistant_line(text)
-                print(f"[Commentary BALL-KINETICS-LLM] {text}", flush=True)
+                logger.info(f"[Commentary BALL-KINETICS-LLM] {text}")
                 # Enqueue as urgent so it plays immediately after the interrupt.
                 self.enqueue_speak(
                     text,
@@ -929,7 +928,7 @@ class MatchCommentaryTTS:
             def _kinetics_committed() -> None:
                 # Interrupt current audio — no lead-in phrase, just change subject directly.
                 self.interrupt_commentary_playback()
-                print("[Commentary BALL-KINETICS] interrupted, waiting for LLM...", flush=True)
+                logger.info("[Commentary BALL-KINETICS] interrupted, waiting for LLM...")
 
             kinetics_scheduled = maybe_ball_kinetics_llm_comment(
                 events=events,
@@ -972,7 +971,7 @@ class MatchCommentaryTTS:
                 if not text:
                     return
                 self._record_assistant_line(text)
-                print(f"[Commentary GEOMETRY-LLM] {text}", flush=True)
+                logger.info(f"[Commentary GEOMETRY-LLM] {text}")
                 self.enqueue_speak(text, source_frame=trigger_frame, label=L_GEOMETRY)
 
             geometry_scheduled = maybe_geometry_llm_comment(
@@ -1014,7 +1013,7 @@ class MatchCommentaryTTS:
             line = pass_line(events, comm)
 
         if line:
-            print(f"[Commentary EVENT] {line}", flush=True)
+            logger.info(f"[Commentary EVENT] {line}")
             urgent = bool(events.goal_for_left_team or events.goal_for_right_team)
             self.enqueue_speak(line, urgent=urgent, source_frame=trigger_frame, label=L_EVENT)
             if "strike" in line.lower():
@@ -1035,7 +1034,7 @@ class MatchCommentaryTTS:
             if (int(trigger_frame) - int(self._last_goal_frame)) <= window_frames:
                 if (now - self._last_kickoff_wait_mono) >= cooldown_sec:
                     wait_line = "Teams are reset and waiting for the kickoff restart."
-                    print(f"[Commentary RESET] {wait_line}", flush=True)
+                    logger.info(f"[Commentary RESET] {wait_line}")
                     self.enqueue_speak(wait_line, source_frame=trigger_frame, label=L_OTHER)
                     self._record_assistant_line(wait_line)
                     self._record_event("kickoff wait after goal")
@@ -1109,7 +1108,7 @@ class MatchCommentaryTTS:
                         if not text:
                             return
                         self._record_assistant_line(text)
-                        print(f"[Commentary PERIODIC-LLM] {text}", flush=True)
+                        logger.info(f"[Commentary PERIODIC-LLM] {text}")
                         self.enqueue_speak(text, source_frame=trigger_frame, label=L_PERIODIC)
 
                     scheduled = maybe_periodic_scene_llm(

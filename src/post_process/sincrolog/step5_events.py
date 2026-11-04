@@ -13,7 +13,6 @@ def process_section(config, mario_section_name, gc_section_names, models_for_com
     for gc_sec_name in gc_section_names:
         paths = config.get_paths(gc_section_name=gc_sec_name)
         _merged_dfs.append(pd.read_csv(paths.merged_csv))
-    print(len(_merged_dfs))
             
     paths = config.get_paths(mario_section_name=mario_section_name)
     with open(paths.gameinfo, 'r') as f:

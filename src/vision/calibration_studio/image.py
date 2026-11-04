@@ -61,7 +61,6 @@ class CSImage:
                 else:
                     self.points[self.selected_point] = [x,y]
                     self.selected_point = -1
-                print(self.points)
 
         elif event == cv.EVENT_MBUTTONDOWN:
             if self.name == "src":

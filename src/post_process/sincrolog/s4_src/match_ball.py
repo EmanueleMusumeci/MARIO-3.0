@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
-from pathlib import Path
 from sklearn.cluster import DBSCAN
 from src.utils import get_mario_state_at_time, get_gc_state_at_time
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 def choose_ball_position(mario_state, gc_state, last_gc_ball, last_mario_ball, current_time, max_ball_age, max_ball_jump):
@@ -24,7 +26,7 @@ def choose_ball_position(mario_state, gc_state, last_gc_ball, last_mario_ball, c
     #mario_balls = mario_state[mario_state.id == -1]
     mario_balls = mario_state[mario_state.type == 'ball']
     if current_time < 1000:
-       print(f"[DEBUG] t={current_time} | mario_balls len: {len(mario_balls)}")
+       logger.info(f"[DEBUG] t={current_time} | mario_balls len: {len(mario_balls)}")
     # se in questo momento nel MARIO-video viene rilevata una sola palla quella è la MARIO-palla per quel momento
     if len(mario_balls) == 1:
         ball_x, ball_y = mario_balls.iloc[0].field_x, mario_balls.iloc[0].field_y
@@ -37,20 +39,20 @@ def choose_ball_position(mario_state, gc_state, last_gc_ball, last_mario_ball, c
             
             # Debug per il controllo jump
             if 54000 <= current_time <= 55000:  # O il range che ti interessa
-                print(f"\n[DEBUG MARIO BALL JUMP] t={current_time:.0f}ms")
-                print(f"  Palla MARIO corrente: ({ball_x:.1f}, {ball_y:.1f})")
-                print(f"  Ultima palla MARIO: ({last_ball_pos[0]:.1f}, {last_ball_pos[1]:.1f})")
-                print(f"  Jump distance: {jump_distance:.1f}mm")
-                print(f"  max_ball_jump: {max_ball_jump}mm")
+                logger.info(f"\n[DEBUG MARIO BALL JUMP] t={current_time:.0f}ms")
+                logger.info(f"  Palla MARIO corrente: ({ball_x:.1f}, {ball_y:.1f})")
+                logger.info(f"  Ultima palla MARIO: ({last_ball_pos[0]:.1f}, {last_ball_pos[1]:.1f})")
+                logger.info(f"  Jump distance: {jump_distance:.1f}mm")
+                logger.info(f"  max_ball_jump: {max_ball_jump}mm")
             
             if jump_distance > max_ball_jump:
                 if 54000 <= current_time <= 55000:
-                    print(f"  -> MARIO BALL JUMP TROPPO GRANDE! Usando logica GC...")
+                    logger.info(f"  -> MARIO BALL JUMP TROPPO GRANDE! Usando logica GC...")
                 # Jump troppo grande, ignora la palla MARIO e usa la logica GC
                 pass  # Continua con la logica GC qui sotto
             else:
                 if 54000 <= current_time <= 55000:
-                    print(f"  -> MARIO ball jump OK")
+                    logger.info(f"  -> MARIO ball jump OK")
                 return ball_x, ball_y, 'mario_singleball'
         else:
             # Prima palla MARIO, accettala sempre
@@ -58,7 +60,7 @@ def choose_ball_position(mario_state, gc_state, last_gc_ball, last_mario_ball, c
         
 
         #if current_time < 10000:
-         #   print(f"[DEBUG MARIO BALL] t={current_time:.0f} ms | mario_ball_time={mario_ball_time}")
+         #   logger.info(f"[DEBUG MARIO BALL] t={current_time:.0f} ms | mario_ball_time={mario_ball_time}")
         #return ball_x, ball_y, 'mario_singleball'
     elif len(mario_balls) > 1:
         # **NUOVO: Controllo jump anche per multiple balls**
@@ -113,11 +115,11 @@ def choose_ball_position(mario_state, gc_state, last_gc_ball, last_mario_ball, c
             positions = gc_balls[['ballx', 'bally']].values
              # Robot che vedono la palla dal 54000 al 55000**
             if 54000 <= current_time <= 55000:
-                print(f"\n[DEBUG GC BALLS] t={current_time:.0f} ms | Robot con palla: {len(gc_balls)}")
+                logger.info(f"\n[DEBUG GC BALLS] t={current_time:.0f} ms | Robot con palla: {len(gc_balls)}")
                 if last_ball is not None:
-                    print(f"  Ultima palla nota: ({last_ball[0]:.1f}, {last_ball[1]:.1f}) al tempo {last_ball[2]:.0f}ms")
+                    logger.info(f"  Ultima palla nota: ({last_ball[0]:.1f}, {last_ball[1]:.1f}) al tempo {last_ball[2]:.0f}ms")
                 else:
-                    print(f"  Nessuna ultima palla nota")
+                    logger.info(f"  Nessuna ultima palla nota")
                                     # Stampa dettagli di ogni robot che vede la palla
                 for idx, row in gc_balls.iterrows():
                     robot_pos = (row['x'], row['y'])
@@ -129,19 +131,19 @@ def choose_ball_position(mario_state, gc_state, last_gc_ball, last_mario_ball, c
                     else:
                         dist_from_last = None
                     
-                    print(f"    Robot ({row['team']}, {row['player']}): pos_robot=({robot_pos[0]:.1f}, {robot_pos[1]:.1f}) | ball_local=({ball_local_pos[0]:.1f}, {ball_local_pos[1]:.1f}) | ballage={row['ballage']:.1f}")
+                    logger.info(f"    Robot ({row['team']}, {row['player']}): pos_robot=({robot_pos[0]:.1f}, {robot_pos[1]:.1f}) | ball_local=({ball_local_pos[0]:.1f}, {ball_local_pos[1]:.1f}) | ballage={row['ballage']:.1f}")
                     if dist_from_last is not None:
-                        print(f"      -> Distanza da ultima palla: {dist_from_last:.1f}mm")
+                        logger.info(f"      -> Distanza da ultima palla: {dist_from_last:.1f}mm")
             # DEBUG: stampa i candidati GC robot tra 30 e 60 secondi
             # if 54000 <= current_time <= 38000:
-            #     print(f"[DEBUG GC CANDIDATES] t={current_time} ms | GC robot count: {len(gc_balls)}")
-            #     print("GC robot positions:")
+            #     logger.info(f"[DEBUG GC CANDIDATES] t={current_time} ms | GC robot count: {len(gc_balls)}")
+            #     logger.info("GC robot positions:")
             #     for idx, row in gc_balls.iterrows():
-            #         print(f"  id={row['player']} team={row['team']} pos=({row['ballx']:.1f}, {row['bally']:.1f}) ballage={row['ballage']}")
+            #         logger.info(f"  id={row['player']} team={row['team']} pos=({row['ballx']:.1f}, {row['bally']:.1f}) ballage={row['ballage']}")
             #     if last_ball is not None:
-            #         print(f"[DEBUG LAST BALL] last_ball=({last_ball[0]:.1f}, {last_ball[1]:.1f}) | rilevata a t={last_ball[2]/1000:.2f}s | source={last_ball[3] if len(last_ball)>3 else 'N/A'}")
+            #         logger.info(f"[DEBUG LAST BALL] last_ball=({last_ball[0]:.1f}, {last_ball[1]:.1f}) | rilevata a t={last_ball[2]/1000:.2f}s | source={last_ball[3] if len(last_ball)>3 else 'N/A'}")
             #     else:
-            #         print("[DEBUG LAST BALL] Nessuna last_ball disponibile")    
+            #         logger.info("[DEBUG LAST BALL] Nessuna last_ball disponibile")    
             if len(positions) > 1:
                 BALL_CLUSTER_EPS = 800
                 BALL_CLUSTER_MIN_SAMPLES = 2
@@ -150,16 +152,16 @@ def choose_ball_position(mario_state, gc_state, last_gc_ball, last_mario_ball, c
                 labels, counts = np.unique(clustering.labels_[clustering.labels_ != -1], return_counts=True)
                 # DEBUG: stampa i cluster formati tra 30 e 60 secondi
                 # if 30000 <= current_time <= 54000:
-                #     print(f"[DEBUG GC CLUSTERS] t={current_time} ms | cluster labels: {labels} | counts: {counts}")
+                #     logger.info(f"[DEBUG GC CLUSTERS] t={current_time} ms | cluster labels: {labels} | counts: {counts}")
                 #     for label in labels:
                 #         cluster_positions = positions[clustering.labels_ == label]
-                #         print(f"  Cluster {label}: {len(cluster_positions)} robot, mean pos=({cluster_positions.mean(axis=0)[0]:.1f}, {cluster_positions.mean(axis=0)[1]:.1f})")
+                #         logger.info(f"  Cluster {label}: {len(cluster_positions)} robot, mean pos=({cluster_positions.mean(axis=0)[0]:.1f}, {cluster_positions.mean(axis=0)[1]:.1f})")
                 # **DEBUG CLUSTERING: Risultati clustering dal 54000 al 55000**
                 if 54000 <= current_time <= 55000:
-                    print(f"  CLUSTERING: eps={BALL_CLUSTER_EPS}, min_samples={BALL_CLUSTER_MIN_SAMPLES}")
-                    print(f"  Cluster labels trovati: {labels}")
-                    print(f"  Cluster counts: {counts}")
-                    print(f"  Outliers (label -1): {np.sum(clustering.labels_ == -1)}")
+                    logger.info(f"  CLUSTERING: eps={BALL_CLUSTER_EPS}, min_samples={BALL_CLUSTER_MIN_SAMPLES}")
+                    logger.info(f"  Cluster labels trovati: {labels}")
+                    logger.info(f"  Cluster counts: {counts}")
+                    logger.info(f"  Outliers (label -1): {np.sum(clustering.labels_ == -1)}")
                     
                     # Mostra dettagli di ogni cluster
                     for label in np.unique(clustering.labels_):
@@ -168,16 +170,16 @@ def choose_ball_position(mario_state, gc_state, last_gc_ball, last_mario_ball, c
                         cluster_robots = gc_balls[cluster_mask]
                         
                         if label == -1:
-                            print(f"    OUTLIERS ({len(cluster_positions)} robot):")
+                            logger.info(f"    OUTLIERS ({len(cluster_positions)} robot):")
                         else:
                             mean_pos = cluster_positions.mean(axis=0)
-                            print(f"    CLUSTER {label} ({len(cluster_positions)} robot): mean=({mean_pos[0]:.1f}, {mean_pos[1]:.1f})")
+                            logger.info(f"    CLUSTER {label} ({len(cluster_positions)} robot): mean=({mean_pos[0]:.1f}, {mean_pos[1]:.1f})")
                         
                         for idx, (_, robot) in enumerate(cluster_robots.iterrows()):
                             pos = cluster_positions[idx]
-                            print(f"      Robot ({robot['team']}, {robot['player']}): ball=({pos[0]:.1f}, {pos[1]:.1f})")
+                            logger.info(f"      Robot ({robot['team']}, {robot['player']}): ball=({pos[0]:.1f}, {pos[1]:.1f})")
                     
-                    print(f"  -> Cluster utilizzabile trovato: {len(labels) > 0}")
+                    logger.info(f"  -> Cluster utilizzabile trovato: {len(labels) > 0}")
 
                 if len(labels) > 0:
                     # Scegli il cluster più numeroso
@@ -186,21 +188,21 @@ def choose_ball_position(mario_state, gc_state, last_gc_ball, last_mario_ball, c
 
                     ball_x, ball_y = cluster_positions.mean(axis=0)
                     if 54000 <= current_time <= 55000:
-                        print(f"  -> CLUSTER SCELTO: {best_label} con {counts[np.argmax(counts)]} robot")
-                        print(f"  -> Posizione finale palla: ({ball_x:.1f}, {ball_y:.1f})")
+                        logger.info(f"  -> CLUSTER SCELTO: {best_label} con {counts[np.argmax(counts)]} robot")
+                        logger.info(f"  -> Posizione finale palla: ({ball_x:.1f}, {ball_y:.1f})")
                     
                     # --- CONTROLLO LIMITE SPOSTAMENTO PALLA ---
                     jump = np.linalg.norm(np.array([ball_x, ball_y]) - last_ball_xy)
                     if 54000 <= current_time <= 55000:
-                            print(f"  -> Jump check: distanza={jump:.1f}mm, max_allowed={max_ball_jump}mm")
+                            logger.info(f"  -> Jump check: distanza={jump:.1f}mm, max_allowed={max_ball_jump}mm")
                     if jump > max_ball_jump:
                         if 54000 <= current_time <= 55000:
-                            print(f"  -> JUMP TROPPO GRANDE! Usando ultima posizione nota.")
+                            logger.info(f"  -> JUMP TROPPO GRANDE! Usando ultima posizione nota.")
                         return float(last_ball[0]), float(last_ball[1]), 'not_found'
                     return ball_x, ball_y, 'gc_cluster'
                 else:   
                     if 54000 <= current_time <= 55000:
-                        print(f"  -> NESSUN CLUSTER VALIDO! Tentando fallback...")  
+                        logger.info(f"  -> NESSUN CLUSTER VALIDO! Tentando fallback...")  
                     # Se non si formano cluster, #### fallback: GC-palla più vicina all'ultima MARIO-palla
                     # Usa come riferimento l'ultima palla scelta (MARIO o GC)
 
@@ -236,7 +238,7 @@ def choose_ball_position(mario_state, gc_state, last_gc_ball, last_mario_ball, c
     # se non c'è una mario palla e non c'è una gc palla prendi mario palla recente se c'è    
     if last_mario_ball is not None and (current_time - last_mario_ball[2]) < max_ball_age:
         return last_mario_ball[0], last_mario_ball[1], 'mario_last'
-    # print("non rientra nei casi")
+    # logger.info("non rientra nei casi")
     if last_ball is None:
         return None, None, 'not_found'
     else:
@@ -299,7 +301,7 @@ def build_ball_dataset(mario_df, gc_fixed_penalties, initial_ball, ball_source, 
         if timestamp < 0:
             continue
         if i % 1000 == 0 or i == len(timestamps) - 1:
-            print(f"[BALL DATASET] Frame {i+1}/{len(timestamps)} (gametime: {timestamp:.0f} ms)")
+            logger.info(f"[BALL DATASET] Frame {i+1}/{len(timestamps)} (gametime: {timestamp:.0f} ms)")
             
         mario_state = get_mario_state_at_time(mario_df, timestamp)
         gc_state = get_gc_state_at_time(gc_fixed_penalties, timestamp)
@@ -350,7 +352,7 @@ def build_ball_dataset(mario_df, gc_fixed_penalties, initial_ball, ball_source, 
                         gc_ball_x, gc_ball_y = cluster_positions.mean(axis=0)
         
         if timestamp <= 62000:
-            print(f"[DEBUG BALL GLOBAL] t={timestamp:.0f} ms | pos=({ball_x}, {ball_y}) | source={source}")
+            logger.info(f"[DEBUG BALL GLOBAL] t={timestamp:.0f} ms | pos=({ball_x}, {ball_y}) | source={source}")
             
         ball_rows.append({
             'timestamp_ms': timestamp,

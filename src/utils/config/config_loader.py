@@ -134,6 +134,10 @@ class MarioConfig(Munch):
             with open(game_history_path, 'w') as f:
                 yaml.dump(game_history, f)
 
+        if args.verbose:
+            self.logging.level = "DEBUG"
+        # else use the one in the config file
+
     def get_paths(self, *, mario_section_name=None, gc_section_name=None):
         return PathsConfig(self.paths_data, self.game_name, mario_section_name=mario_section_name, gc_section_name=gc_section_name)
 
@@ -175,7 +179,6 @@ class MarioConfig(Munch):
         with open(robot_path, 'r') as f:
             data = yaml.safe_load(f)
         self._robot_config = Munch.fromDict(data)
-        print(self._robot_config)
     @property
     def robot_type(self):
         if self._robot_type is None:

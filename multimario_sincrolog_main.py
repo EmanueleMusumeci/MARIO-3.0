@@ -76,7 +76,7 @@ def main():
     # do this early as it's still potential user interaction
     for game_name in args.game_names:
         if args.recalibrate or autoparams_needed(game_name):
-            print(game_name)
+            print(f"{game_name}: auto-section-params")
             # sumgen needs this json to work. this also helps us check for any typos in the side hints.
             make_team_mappings(game_name)
             subprocess.run([

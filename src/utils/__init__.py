@@ -1,7 +1,7 @@
 """Utility modules."""
 
 from .config.config_loader import MarioConfig, FIELD_TYPE_TO_FILE, VISION_TYPE_TO_FILE, VISION_TYPE_TO_CNN, ROBOT_TYPE_TO_FILE
-from .logger import setup_logger, get_logger
+from .logger import setup_logger
 # from .sectioning import get_sections_to_do
 from .sectioning import get_section_names_to_do
 from .team_info import *
@@ -14,7 +14,6 @@ __all__ = [
     "VISION_TYPE_TO_CNN",
     "ROBOT_TYPE_TO_FILE",
     "setup_logger",
-    "get_logger",
     # "get_sections_to_do",
     "get_section_names_to_do"
 ]

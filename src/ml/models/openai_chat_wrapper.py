@@ -8,6 +8,9 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 import traceback
+import logging
+logger = logging.getLogger(__name__)
+
 
 _executor = ThreadPoolExecutor(max_workers=4)
 
@@ -64,9 +67,8 @@ class OpenAIChatWrapper:
         self._model = model
 
     def llm_call(self, prompt: str) -> str:
-        print(
+        logger.info(
             f"[OpenAI LLM] sync call | model={self._model} | prompt_chars={len(prompt)}",
-            flush=True,
         )
         return self._chat(prompt)
 
@@ -75,9 +77,8 @@ class OpenAIChatWrapper:
         prompt: str,
         on_done: Optional[Callable[[str], None]] = None,
     ) -> "Future[str]":
-        print(
+        logger.info(
             f"[OpenAI LLM] async call | model={self._model} | prompt_chars={len(prompt)}",
-            flush=True,
         )
         fut = _executor.submit(self._chat, prompt)
         if on_done is not None:
@@ -85,7 +86,7 @@ class OpenAIChatWrapper:
             def _cb(f: "Future[str]") -> None:
                 exc = f.exception()
                 if exc:
-                    print(f"[OpenAIChatWrapper] async call failed: {exc}", flush=True)
+                    logger.warning(f"[OpenAIChatWrapper] async call failed: {exc}")
                     traceback.format_exc(exc)
                     on_done("")
                 else:

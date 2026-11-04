@@ -145,22 +145,17 @@ class CalibrationStudio:
                 order_string = f"k{current_order}"
                 if key == ord('q'):
                     self.ds[order_string] += self.ds.PARAM_SPECS_BY_NAME[order_string].shift_step
-                    print(self.ds, "selected order:", current_order)
                 elif key == ord('a'):
                     self.ds[order_string] -= self.ds.PARAM_SPECS_BY_NAME[order_string].shift_step
-                    print(self.ds, "selected order:", current_order)
                 elif key == ord('w'):
                     self.ds[order_string] += self.ds.PARAM_SPECS_BY_NAME[order_string].step
-                    print(self.ds, "selected order:", current_order)
                 elif key == ord('s'):
                     self.ds[order_string] -= self.ds.PARAM_SPECS_BY_NAME[order_string].step
-                    print(self.ds, "selected order:", current_order)
 
                 elif key in {ord(d) for d in '123456789'}:
                     int_key = int(chr(key))
                     if int_key <= self.MAX_K_ORDER:
                         current_order = int_key
-                        print(self.ds, "selected order:", current_order)
 
             self.d_gui.selected_param = f"k{current_order}"
 

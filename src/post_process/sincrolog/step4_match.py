@@ -9,6 +9,9 @@ import src.post_process.sincrolog.s4_src.match_robot as match_robot
 import json
 import src.utils as utils
 
+import logging
+logger = logging.getLogger(__name__)
+
 def calculate_assignments_at_start_of_play(gc_fixed_penalties, mario_df, time, s_config):
 
     # Usa il dataset corretto per le assegnazioni
@@ -103,7 +106,7 @@ def merge_datasets_with_manual_reassignment(gc_fixed_penalties, mario_df, assign
     ball_y = None
 
 
-    print(f"--- Inizio Merge Manuale ({len(timestamps)} frames) ---")
+    logger.info(f"--- Inizio Merge Manuale ({len(timestamps)} frames) ---")
     association_frame_count = {}
     break_events = []
     frame_indices_tqdm = tqdm.tqdm(enumerate(frame_indices), total=len(frame_indices), desc=f"step4 for {section_name}")
@@ -168,7 +171,7 @@ def merge_datasets_with_manual_reassignment(gc_fixed_penalties, mario_df, assign
                 'flipped': flipped_flag
             })
         
-    print("--- Merge Manuale Completato ---")
+    logger.info("--- Merge Manuale Completato ---")
     return pd.DataFrame(results), pd.DataFrame(break_events)
 
 
@@ -177,7 +180,7 @@ def flip_gc_robot_origin(gc_df, robots_to_flip, intervals):
     """
     Flippa i robot specificati rispetto all'origine (0,0) negli intervalli di tempo dati.
     """
-    print(f"[DEBUG] Flippando robot {robots_to_flip} negli intervalli {intervals}")
+    logger.info(f"[DEBUG] Flippando robot {robots_to_flip} negli intervalli {intervals}")
     
     for robot_key in robots_to_flip:
         team, player = robot_key
@@ -188,7 +191,7 @@ def flip_gc_robot_origin(gc_df, robots_to_flip, intervals):
             combined_mask = robot_mask & time_mask
             
             if combined_mask.sum() > 0:
-                print(f"  Flippando robot ({team}, {player}) da {start_time}ms a {end_time}ms ({combined_mask.sum()} frame)")
+                logger.info(f"  Flippando robot ({team}, {player}) da {start_time}ms a {end_time}ms ({combined_mask.sum()} frame)")
                 
                 # Flippa le coordinate rispetto all'origine
                 gc_df.loc[combined_mask, 'x'] = -gc_df.loc[combined_mask, 'x']
@@ -232,10 +235,10 @@ def main(section_name, time_limit, config):
         return
 
     assignment_data = calculate_assignments_at_start_of_play(gc_fixed_penalties, mario_df, 0, config.robot_config.sincrolog)
-    print("\n[DEBUG] ASSEGNAZIONI INIZIALI:")
+    logger.info("\n[DEBUG] ASSEGNAZIONI INIZIALI:")
     for robot_key, mario_id in assignment_data['assignments'].items():
-        print(f"  Robot {robot_key} → MARIO ID {mario_id}")
-    print(f"GC only (senza assegnazione): {assignment_data['gc_only']}\n")
+        logger.info(f"  Robot {robot_key} → MARIO ID {mario_id}")
+    logger.info(f"GC only (senza assegnazione): {assignment_data['gc_only']}\n")
     # Costruisci il dataset della palla prima
     initial_ball = assignment_data['initial_ball']
     ball_source = assignment_data['ball_source']
@@ -244,7 +247,7 @@ def main(section_name, time_limit, config):
     # ball_df = match_ball.build_ball_dataset(mario_df, gc_fixed_penalties, initial_ball, ball_source, config.robot_config.sincrolog)
     # ball_df.to_csv(paths.sincrolog_output_dir / "ball_dataset.csv", index=False)
 
-    print(f"[CONFIG] Salvando output in: {paths.merged_csv}")
+    logger.info(f"[CONFIG] Salvando output in: {paths.merged_csv}")
     merged_df.to_csv(paths.merged_csv, index=False)
 
     if not break_df.empty:

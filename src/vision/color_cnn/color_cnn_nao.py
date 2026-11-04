@@ -9,9 +9,9 @@ from ...utils.logger import setup_logger
 from src.utils.config.paths import ROOT_DIR
 
 class ColorCNNNao:
-    def __init__(self, config, log_level):
+    def __init__(self, config):
         """Load CNN color classification model."""
-        self.logger = setup_logger(__name__, level=log_level)
+        self.logger = setup_logger(__name__, config)
         config_path = ROOT_DIR / config.vision_config.color_classifier_config
 
         if not config_path.exists():

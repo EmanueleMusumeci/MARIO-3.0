@@ -57,7 +57,6 @@ def process_events_posthoc(config, mario_section_name, models_for_commentary=Non
     eventproc.begin_section()
 
     frame_ids = pd.unique(df.frame)
-    print(frame_ids)
     for frame in tqdm.tqdm(frame_ids, desc=tqdm_desc):
         frame_df = df[df.frame == frame]
         events = eventproc.process_frame(frame_df)  # does all as internal side-effect, including writing the file

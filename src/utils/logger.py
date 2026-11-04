@@ -8,9 +8,7 @@ from typing import Optional
 
 def setup_logger(
     name: str,
-    level: str = "INFO",
-    log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    log_file: Optional[Path] = None
+    config
 ) -> logging.Logger:
     """
     Set up a logger with the specified configuration.
@@ -25,40 +23,30 @@ def setup_logger(
         Configured logger instance.
     """
     logger = logging.getLogger(name)
-    logger.setLevel(getattr(logging, level.upper()))
+    logger.setLevel(getattr(logging, config.logging.level.upper()))
 
     # Remove existing handlers to avoid duplicates
     logger.handlers.clear()
 
     # Create formatter
-    formatter = logging.Formatter(log_format)
+    formatter = logging.Formatter(config.logging.format)
 
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(getattr(logging, level.upper()))
+    console_handler.setLevel(getattr(logging, config.logging.level.upper()))
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
+    # TODO fare doppio livello per console e file
+    # TODO trovare modo di usare questa setup_logger anche in tutti gli altri file che usano logging.getLogger
+
     # File handler (if specified)
-    if log_file is not None:
-        log_file = Path(log_file)
+    if config.logging.file is not None:
+        log_file = Path(config.logging.file)
         log_file.parent.mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(getattr(logging, level.upper()))
+        file_handler.setLevel(getattr(logging, config.logging.level.upper()))
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
     return logger
-
-
-def get_logger(name: str) -> logging.Logger:
-    """
-    Get an existing logger by name.
-
-    Args:
-        name: Logger name.
-
-    Returns:
-        Logger instance.
-    """
-    return logging.getLogger(name)

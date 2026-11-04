@@ -9,8 +9,8 @@ from ...utils.logger import setup_logger
 from src.utils.config.paths import ROOT_DIR
 
 class ColorCNNBooster:
-    def __init__(self, config, log_level):
-        self.logger = setup_logger(__name__, level=log_level)
+    def __init__(self, config):
+        self.logger = setup_logger(__name__, config)
         self.config = config
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
