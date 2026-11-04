@@ -227,6 +227,7 @@ class DataTransmuter:
     def stir(self):
         if self.results:
             raise ValueError("Can only be used once.")
+
         for item in iterate_yaml_list_items(self.gc_log_path):
             itemtype =  item["entry"]["__type__"]
 
@@ -253,4 +254,9 @@ class DataTransmuter:
             elif itemtype == "action":
                 if self.current_section is not None:
                     self.on_action(item)
+
+        # end current section if we reach EOF and it's still wasn't closed (e.g. GC closed incorrectly, or ref clicked stop instead of finish)
+        if self.current_section is not None:
+            self.on_section_end()
+
         return self.metadata, self.results
