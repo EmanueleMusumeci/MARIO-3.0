@@ -93,7 +93,7 @@ def go(args):
 
     # calibrate everything first
 
-    ask_calibration_timestamp = True
+    ask_calibration_timestamp = args.calibration_median_frames <= 1  # -cm replaces the timestamp
     side_hints = dict()
 
     for game_name in args.game_names:
