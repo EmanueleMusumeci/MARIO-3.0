@@ -22,7 +22,9 @@ section_name = config.dir_names.mario_section_prefix + args.section
 paths = config.get_paths(mario_section_name=section_name)
 
 if args.calibration_frame is not None:
-    raise NotImplementedError("This is easy to implement but it's best to use -ct if possible")
+    calibration_frame = cv2.imread(str(args.calibration_frame))
+    if calibration_frame is None:
+        raise ValueError(f"Cannot read calibration frame: {args.calibration_frame}")
 elif args.calibration_timestamp is not None:
     video = cv2.VideoCapture(str(paths.source_video))
     if not video.isOpened():
